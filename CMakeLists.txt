@@ -206,6 +206,6 @@ include_directories(
 # catkin_add_nosetests(test)
 
 
-catkin_install_python(PROGRAMS scripts/lidar_test.py 
+catkin_install_python(PROGRAMS scripts/lidar_test.py scripts/ttc_ebrake.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
