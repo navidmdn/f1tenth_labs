@@ -1,7 +1,8 @@
 import rospy
-from std_msgs.msg import String, Float64
+from std_msgs.msg import String, Float64, Bool
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
+from ackermann_msgs.msg import AckermannDriveStamped
 
 import numpy as np
 
@@ -10,17 +11,31 @@ class TTCEBreak:
 	def __init__(self):
 		rospy.init_node('ttcnode', anonymous=True)
 		self.publisher = rospy.Publisher('ttc', String, queue_size=10)
+		self.break_com_pub = rospy.Publisher('brake', AckermannDriveStamped, queue_size=10)
+		self.break_mux_pub = rospy.Publisher('brake_bool', Bool, queue_size=10)
+
 		self.prev_collect_time = -1
 		self.laser_vals = []
 		self.v_vals = []
 		self.orient_vals = []
-		self.group_t = 0.5
+		self.group_t = 0.2
 
 	def reset_states(self, t):
 		self.prev_collect_time = t
 		self.laser_vals = []
 		self.v_vals = []
 		self.orient_vals = []
+
+	def check_and_break(self, ttc):
+
+		if ttc < 2.0:
+			break_msg = AckermannDriveStamped()
+			break_msg.drive.speed = 0.0
+			break_msg.drive.acceleration = 0.0
+			self.publisher.publish("BREAK")
+			self.break_com_pub.publish(break_msg)
+			self.break_mux_pub.publish(True)
+
 
 	def measure_ttc(self):
 		if len(self.laser_vals) == 0 or len(self.v_vals) == 0 or len(self.orient_vals) == 0:
@@ -32,8 +47,8 @@ class TTCEBreak:
 
 		denominator = max(rdot, 0) + 0.000001
 		ttc = r/denominator
-
-		self.publisher.publish("avg_dist:"+str(ttc))
+		self.check_and_break(ttc)
+		self.publisher.publish("ttc:"+str(ttc))
 
 	def avg_dist(self, data):
 		
