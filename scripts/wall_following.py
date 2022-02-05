@@ -26,6 +26,9 @@ from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 # VELOCITY = 2.00 # meters per second
 # CAR_LENGTH = 0.50 # Traxxas Rally is 20 inches or 0.5 meters
 
+WALL_DIST = 0.9
+KP = 0.3
+
 class WallFollow:
     """ Implement Wall Following on the car
     """
@@ -38,9 +41,9 @@ class WallFollow:
         self.a = []
         self.b = []
         self.collect_t = -1
-        self.sync_time = 1.0
+        self.sync_time = 0.3
         self.lidar_sub = rospy.Subscriber('scan', LaserScan, self.get_range_wrapper)
-        # self.drive_pub = #TODO: Publish to drive
+        self.drive_pub = rospy.Publisher('nav', AckermannDriveStamped, queue_size=10)
         self.debug_pub = rospy.Publisher('debug', String, queue_size=10)
 
     def _debug(self, msg, prefix=""):
@@ -84,6 +87,37 @@ class WallFollow:
 
         Dt = b * np.cos(alpha)
         self._debug(Dt, prefix="Dt:")
+
+        #TODO: can be estimated using odomoetry
+        L = 0.01
+        Dt1 = Dt + L*np.sin(alpha)
+
+        err = WALL_DIST - Dt1
+        self._debug(err, prefix="err:")
+
+        self.drive(err)
+
+
+    def drive(self, err):
+        drive_msg = AckermannDriveStamped()
+        drive_msg.header.stamp = rospy.Time.now()
+        drive_msg.header.frame_id = "laser"
+
+        angle = KP*(-err)
+        drive_msg.drive.steering_angle = angle
+        
+        angle_deg = abs(angle/(np.pi/180))
+        if angle_deg < 10:
+            speed = 1.5
+        elif angle_deg < 20:
+            speed = 1.0
+        else:
+            speed = 0.5
+
+        drive_msg.drive.speed = speed
+        self.drive_pub.publish(drive_msg)
+        self._debug(speed, prefix="speed:")
+        self._debug(angle_deg, prefix="angle:")
 
 
     # def pid_control(self, error, velocity):
