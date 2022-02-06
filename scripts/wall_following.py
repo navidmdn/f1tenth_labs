@@ -10,21 +10,6 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image, LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 
-#PID CONTROL PARAMS
-# kp = #TODO
-# kd = #TODO
-# ki = #TODO
-# servo_offset = 0.0
-# prev_error = 0.0 
-# error = 0.0
-# integral = 0.0
-
-# #WALL FOLLOW PARAMS
-# ANGLE_RANGE = 270 # Hokuyo 10LX has 270 degrees scan
-# DESIRED_DISTANCE_RIGHT = 0.9 # meters
-# DESIRED_DISTANCE_LEFT = 0.55
-# VELOCITY = 2.00 # meters per second
-# CAR_LENGTH = 0.50 # Traxxas Rally is 20 inches or 0.5 meters
 
 WALL_DIST = 0.9
 KP = 0.3
@@ -134,33 +119,6 @@ class WallFollow:
         self._debug(speed, prefix="speed:")
         self._debug(angle_deg, prefix="angle:")
 
-
-    # def pid_control(self, error, velocity):
-    #     global integral
-    #     global prev_error
-    #     global kp
-    #     global ki
-    #     global kd
-    #     angle = 0.0
-    #     #TODO: Use kp, ki & kd to implement a PID controller for 
-    #     drive_msg = AckermannDriveStamped()
-    #     drive_msg.header.stamp = rospy.Time.now()
-    #     drive_msg.header.frame_id = "laser"
-    #     drive_msg.drive.steering_angle = angle
-    #     drive_msg.drive.speed = velocity
-    #     self.drive_pub.publish(drive_msg)
-
-    # def followLeft(self, data, leftDist):
-    #     #Follow left wall as per the algorithm 
-    #     #TODO:implement
-    #     return 0.0 
-
-    # def lidar_callback(self, data):
-    #     """ 
-    #     """
-    #     error = 0.0 #TODO: replace with error returned by followLeft
-    #     #send error to pid_control
-    #     self.pid_control(error, VELOCITY)
 
 def main(args):
     rospy.init_node("WallFollow_node", anonymous=True)
