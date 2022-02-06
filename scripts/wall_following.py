@@ -28,6 +28,8 @@ from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 
 WALL_DIST = 0.9
 KP = 0.3
+KD = 0.18
+KI = 0.2
 
 class WallFollow:
     """ Implement Wall Following on the car
@@ -40,8 +42,13 @@ class WallFollow:
         self.theta = (90 - self.a_deg)/ 360 * 2 * np.pi
         self.a = []
         self.b = []
+
+        self.prev_err = None
+        self.err_hist = []
+
         self.collect_t = -1
-        self.sync_time = 0.3
+        self.sync_time = 0.1
+        self.integral_size = int(1 / self.sync_time)
         self.lidar_sub = rospy.Subscriber('scan', LaserScan, self.get_range_wrapper)
         self.drive_pub = rospy.Publisher('nav', AckermannDriveStamped, queue_size=10)
         self.debug_pub = rospy.Publisher('debug', String, queue_size=10)
@@ -78,7 +85,6 @@ class WallFollow:
             self.reset(t)
 
 
-
     def get_range(self, a, b):
         self._debug(a, prefix="a: ")
         self._debug(b, prefix="b: ")
@@ -89,12 +95,13 @@ class WallFollow:
         self._debug(Dt, prefix="Dt:")
 
         #TODO: can be estimated using odomoetry
-        L = 0.01
+        L = 0.2
         Dt1 = Dt + L*np.sin(alpha)
 
         err = WALL_DIST - Dt1
-        self._debug(err, prefix="err:")
+        err = -err
 
+        self._debug(err, prefix="err:")
         self.drive(err)
 
 
@@ -102,8 +109,16 @@ class WallFollow:
         drive_msg = AckermannDriveStamped()
         drive_msg.header.stamp = rospy.Time.now()
         drive_msg.header.frame_id = "laser"
+        
+        if self.prev_err is None:
+            self.prev_err = err
+        diff = err - self.prev_err
 
-        angle = KP*(-err)
+        self.err_hist.append(err)
+        if len(self.err_hist) > self.integral_size:
+            self.err_hist.pop(0)          
+
+        angle = KP*err + KD*diff + KI*sum(self.err_hist)
         drive_msg.drive.steering_angle = angle
         
         angle_deg = abs(angle/(np.pi/180))
