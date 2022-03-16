@@ -10,30 +10,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image, LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 
-
-#TODO: make a package in ros
-class PeriodicDebugger:
-    def __init__(self, publisher, period=1000):
-        self.publisher = publisher
-        self.period = period
-        self.debuggers = {'info': 0}
-
-    def register(self, name):
-        self.debuggers[name] = 0
-
-    def debug(self, msg, debugger='info'):
-        if debugger not in self.debuggers:
-            raise Exception("You have not register this debugger.")
-
-        if self.debuggers[debugger] > self.period:
-            if isinstance(msg, list):
-                for _msg in msg:
-                    self.publisher.publish("[" + debugger + "]: " + _msg)
-            else:
-                self.publisher.publish("[" + debugger + "]: " + msg)
-            self.debuggers[debugger] = 0
-        else:
-            self.debuggers[debugger] += 1
+from ros_f110_tools.logger import PeriodicLogger
 
 
 class GAPFollow:
@@ -50,7 +27,7 @@ class GAPFollow:
         self.drive_pub = rospy.Publisher('nav', AckermannDriveStamped, queue_size=10)
         self.debug_pub = rospy.Publisher('debug', String, queue_size=10)
 
-        self.debugger = PeriodicDebugger(self.debug_pub, period=1000)
+        self.debugger = PeriodicLogger(self.debug_pub, period=1000)
 
     def get_range(self, data):
         beg = int((self.lookahead_degrees[0]/360.0)*1080.)
