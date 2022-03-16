@@ -12,9 +12,9 @@ from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 
 
 WALL_DIST = 0.9
-KP = 0.3
-KD = 0.18
-KI = 0.2
+KP = 0.03
+KD = 0.018
+KI = 0.02
 
 class WallFollow:
     """ Implement Wall Following on the car
@@ -24,7 +24,7 @@ class WallFollow:
 
         self.a_deg = 60 #30 degree for calculation
         self.b_deg = 90
-        self.theta = (90 - self.a_deg)/ 360 * 2 * np.pi
+        self.theta = ((90.0 - self.a_deg) / 360.0) * 2 * np.pi
         self.a = []
         self.b = []
 
@@ -57,8 +57,8 @@ class WallFollow:
         t = self.get_time_from_header(data)
         if t - self.collect_t < self.sync_time:
             #TODO: static!
-            a_idx = int((180+self.a_deg)/360*len(data.ranges))
-            b_idx = int((180+self.b_deg)/360*len(data.ranges))
+            a_idx = int((180.+self.a_deg)/360.*len(data.ranges))
+            b_idx = int((180.+self.b_deg)/360.*len(data.ranges))
 
             a, b = data.ranges[a_idx], data.ranges[b_idx]
             self.a.append(a)
@@ -73,6 +73,7 @@ class WallFollow:
     def get_range(self, a, b):
         self._debug(a, prefix="a: ")
         self._debug(b, prefix="b: ")
+        self._debug(self.theta, prefix="theta:")
         alpha = np.arctan((a*np.cos(self.theta)-b)/(a*np.sin(self.theta)))
         self._debug(alpha, prefix="alpha:")
 
@@ -106,7 +107,7 @@ class WallFollow:
         angle = KP*err + KD*diff + KI*sum(self.err_hist)
         drive_msg.drive.steering_angle = angle
         
-        angle_deg = abs(angle/(np.pi/180))
+        angle_deg = abs(angle/(np.pi/180.))
         if angle_deg < 10:
             speed = 1.5
         elif angle_deg < 20:
